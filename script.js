@@ -348,13 +348,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 priceHtml = `<p class="price">${formatCOP(originalPrice)}</p>`;
             }
 
+            // stock badge: show only "En Stock" (green) or "No Stock" (red) — no counts
+            const stockBadge = (Number(prod.stock || 0) > 0)
+                ? `<p class="stock stock-available" aria-hidden="false">En Stock</p>`
+                : `<p class="stock stock-empty" aria-hidden="false">No Stock</p>`;
+
             div.innerHTML = `
                 <a href="${link}" class="card-link"><img src="${escapeHtml(prod.image || 'https://placehold.co/500x360/ddd/000?text=Sin+imagen')}" class="card-img-top" alt="${escapeHtml(prod.title)}"></a>
                 <div class="card-body">
                     <span class="eyebrow">${escapeHtml(prod.eyebrow || '')}</span>
                     <h3><a href="${link}">${escapeHtml(prod.title)}</a></h3>
                     ${priceHtml}
-                    <p class="stock">Disponibles: ${prod.stock || 0} unidades</p>
+                    ${stockBadge}
                     <div style="display:flex;gap:8px">
                         ${!adminOffersActive ? '<button class="btn btn-buy">Añadir al Carrito</button>' : ''}
                         ${sessionStorage.getItem('admin_authed') && adminOffersActive ? '<button class="btn btn-edit-offer">Editar oferta</button>' : ''}
@@ -777,7 +782,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const discounted = getDiscountedPrice(prod);
         const originalPrice = Number(prod.price || 0);
+
         const detailPriceHtml = (prod.discountPercentage && Number(prod.discountPercentage) > 0) ? (`<div class="price-row"><span class="price-original">${formatCOP(originalPrice)}</span><span class="price price-discount" style="font-weight:900">${formatCOP(discounted)}</span></div><div class="offer-badge" style="display:inline-block;margin-top:8px;background:var(--wine-700);color:#fff;padding:6px 8px;border-radius:8px;font-weight:800">-${Number(prod.discountPercentage)}%</div>`) : (`<p class="price">${formatCOP(originalPrice)}</p>`);
+
+        // badge for product detail (no numeric count)
+        const detailStockBadge = (Number(prod.stock || 0) > 0)
+            ? `<p class="stock stock-available">En Stock</p>`
+            : `<p class="stock stock-empty">No Stock</p>`;
 
         const html = `
             <div class="product-detail">
@@ -789,11 +800,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h1>${escapeHtml(prod.title || '')}</h1>
                     ${detailPriceHtml}
                     <p class="description" style="color:var(--muted);line-height:1.6">${escapeHtml(prod.description || '')}</p>
-                    <div class="qty-row">
+                        <div class="qty-row">
                         <button id="qty-minus" class="qty-btn" aria-label="Disminuir cantidad">−</button>
                         <input id="qty-input" type="number" value="1" min="1" aria-label="Cantidad" />
                         <button id="qty-plus" class="qty-btn" aria-label="Aumentar cantidad">+</button>
-                        <div style="margin-left:12px;color:var(--muted)">Disponibles: <strong id="prod-stock">${prod.stock || 0}</strong></div>
+                        ${detailStockBadge}
                     </div>
                     <div class="product-actions">
                         <button id="add-to-cart-btn" class="btn">Añadir al carrito</button>
