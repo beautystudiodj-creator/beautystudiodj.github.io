@@ -1254,7 +1254,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Commit stock
-        area.querySelector('#adm-commit-stock').addEventListener('click', async () => {
+        const admCommitBtn = area.querySelector('#adm-commit-stock');
+        if (admCommitBtn) {
+            // use onclick to avoid duplicate listeners if panel re-renders
+            admCommitBtn.onclick = async () => {
             const ids = Object.keys(admPending);
             if (!ids.length){ return; }
             try{
@@ -1268,9 +1271,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }catch(e){ admShowToast('No se pudo actualizar el stock'); console.warn(e); }
             ids.forEach(id=>{ const p=admProds.find(x=>x.id===id); if(p) p.stock=admPending[id]; });
             admPending = {};
-            area.querySelector('#adm-commit-stock').disabled = true;
+            if (admCommitBtn) admCommitBtn.disabled = true;
             admRender();
-        });
+            };
+        }
 
         admRender();
     }
@@ -1576,18 +1580,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }));
         }
 
-        // Save
-        wrap.querySelector('.btn-save-invoice').addEventListener('click', async () => {
-            try{
-                await persistInvoice(inv);
-                const toast = document.createElement('div');
-                toast.textContent = 'Factura guardada.';
-                toast.className = 'toast show';
-                document.body.appendChild(toast);
-                setTimeout(()=>{ toast.remove(); }, 1400);
-                renderInvoicesManager(area.closest('#admin-panel-area') || area);
-            }catch(e){ alert('Error guardando factura.'); console.warn(e); }
-        });
+        // Save (guarded)
+        const saveInvoiceBtn = wrap.querySelector('.btn-save-invoice');
+        if (saveInvoiceBtn){
+            saveInvoiceBtn.onclick = async () => {
+                try{
+                    await persistInvoice(inv);
+                    const toast = document.createElement('div');
+                    toast.textContent = 'Factura guardada.';
+                    toast.className = 'toast show';
+                    document.body.appendChild(toast);
+                    setTimeout(()=>{ toast.remove(); }, 1400);
+                    renderInvoicesManager(area.closest('#admin-panel-area') || area);
+                }catch(e){ alert('Error guardando factura.'); console.warn(e); }
+            };
+        }
 
         // Confirm
         const confirmBtn = wrap.querySelector('.btn-confirm-invoice');
@@ -1599,11 +1606,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }catch(e){ alert('No se pudo confirmar: ' + (e && e.message ? e.message : String(e))); }
         });
 
-        // Close
-        wrap.querySelector('.btn-close-editor').addEventListener('click', () => {
-            detailArea.innerHTML = '';
-            detailArea.dataset.openId = '';
-        });
+        // Close (guarded)
+        const closeBtn = wrap.querySelector('.btn-close-editor');
+        if (closeBtn){
+            closeBtn.onclick = () => {
+                detailArea.innerHTML = '';
+                detailArea.dataset.openId = '';
+            };
+        }
 
         renderItems();
         recalcTotals();

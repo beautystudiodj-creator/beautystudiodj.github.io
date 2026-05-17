@@ -369,7 +369,8 @@
 
             const commitBtn = document.getElementById('commit-stock-btn');
             if (commitBtn){
-                commitBtn.addEventListener('click', commitStockChanges);
+                // assign onclick to avoid duplicated listeners on re-init
+                commitBtn.onclick = commitStockChanges;
                 updateCommitButtonState();
             }
         };
