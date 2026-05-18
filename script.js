@@ -209,27 +209,51 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function loadProducts() {
-        // Return products loaded from the repository `db.json` (synchronous accessor).
-        // Merge any local overrides (fallback when no server/Firestore available).
-        const prods = DJ_PRODUCTS_DATA ? DJ_PRODUCTS_DATA.slice() : [];
+        const prods = Array.isArray(DJ_PRODUCTS_DATA) ? DJ_PRODUCTS_DATA.slice() : [];
+
+        function mergeProduct(prod) {
+            if (!prod) return;
+            const key = String(prod.id || prod.title || '').trim().toLowerCase();
+            if (!key) return;
+            const idx = prods.findIndex(p => String(p.id || p.title || '').trim().toLowerCase() === key);
+            if (idx === -1) {
+                prods.push(Object.assign({}, prod));
+            } else {
+                prods[idx] = Object.assign({}, prods[idx], prod);
+            }
+        }
+
         try {
-            const raw = localStorage.getItem('dj_local_product_updates');
-            if (raw) {
-                const map = JSON.parse(raw);
+            const rawList = localStorage.getItem('dj_products');
+            if (rawList) {
+                const saved = JSON.parse(rawList);
+                if (Array.isArray(saved)) saved.forEach(mergeProduct);
+            }
+        } catch (e) { /* ignore local product cache errors */ }
+
+        try {
+            const rawUpdates = localStorage.getItem('dj_local_product_updates');
+            if (rawUpdates) {
+                const map = JSON.parse(rawUpdates);
                 prods.forEach(p => {
                     const key = p.id || p.title || '';
                     if (key && map[key]) Object.assign(p, map[key]);
                 });
             }
         } catch(e) { /* ignore local overrides errors */ }
+
         return prods;
     }
 
     function saveProducts(arr) {
-        // Intentionally no-op for repo-backed reads to avoid storing per-browser copies.
-        // Kept for compatibility but does not change the repository.
-        try { /* no-op */ } catch (e) {}
+        try {
+            const list = Array.isArray(arr) ? arr.map(p => Object.assign({}, p)) : [];
+            localStorage.setItem('dj_products', JSON.stringify(list));
+        } catch (e) { /* ignore persistence errors */ }
     }
+
+    window.loadProducts = loadProducts;
+    window.saveProducts = saveProducts;
 
     function ensureProductData() {
         // Repo-backed mode: do not seed from DOM/localStorage. If no products loaded, return empty list.
@@ -1132,7 +1156,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (r.ok){ const data = await r.json(); admProds = Array.isArray(data) ? data : (data.products || []); }
             }catch(e){}
         }
-        admProds = admProds || DJ_PRODUCTS_DATA || [];
+        admProds = (admProds && admProds.length) ? admProds : (typeof loadProducts === 'function' ? loadProducts() : (DJ_PRODUCTS_DATA || []));
 
         function admShowToast(msg){ let t=document.getElementById('adm-toast'); if(!t){t=document.createElement('div');t.id='adm-toast';t.className='toast';document.body.appendChild(t);} t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1400); }
 
@@ -1972,6 +1996,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const db = window.__FIRESTORE_DB__;
                 db.collection('products').onSnapshot(snapshot => {
                     DJ_PRODUCTS_DATA = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                    window.DJ_PRODUCTS_DATA = DJ_PRODUCTS_DATA;
                     createCategoryFilterUI();
                     renderProducts();
                     renderBestSellersWidget();
@@ -1985,20 +2010,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 return;
             }
-        }catch(e){ /* continue to repo fallback */ }
+        }catch(e){ /* continue to fallback sources */ }
 
-        // 2) Fallback to repo db.json (meta repo-base or /db.json)
+        // 2) Fallback to local API when available
+        try{
+            const rApi = await apiFetch('/products');
+            if (rApi && rApi.ok){
+                DJ_PRODUCTS_DATA = await rApi.json();
+                window.DJ_PRODUCTS_DATA = DJ_PRODUCTS_DATA;
+            }
+        }catch(e){ /* ignore API fallback errors */ }
+
+        // 3) Fallback to repo db.json (meta repo-base or /db.json)
         const repoBaseMeta = document.querySelector('meta[name="repo-base"]')?.content || window.__REPO_BASE__ || '';
         const candidates = [];
         if (repoBaseMeta) candidates.push(repoBaseMeta.replace(/\/$/, '') + '/db.json');
         candidates.push('/db.json');
-        let loaded = false;
+        let loaded = Array.isArray(DJ_PRODUCTS_DATA) && DJ_PRODUCTS_DATA.length > 0;
         for (const url of candidates){
+            if (loaded) break;
             try{
                 const r = await fetch(url, { cache: 'no-cache' });
                 if (r && r.ok){
                     const data = await r.json();
                     DJ_PRODUCTS_DATA = Array.isArray(data) ? data : (data.products || []);
+                    window.DJ_PRODUCTS_DATA = DJ_PRODUCTS_DATA;
                     loaded = true;
                     break;
                 }
@@ -2007,7 +2043,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!loaded){
             DJ_PRODUCTS_DATA = [];
-            console.warn('No repository db.json found; site will show no products.');
+            window.DJ_PRODUCTS_DATA = DJ_PRODUCTS_DATA;
+            console.warn('No product source found; site will show no products.');
         }
 
         createCategoryFilterUI();
