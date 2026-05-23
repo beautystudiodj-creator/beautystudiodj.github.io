@@ -1986,7 +1986,7 @@ document.addEventListener('DOMContentLoaded', () => {
     (async function initRepoProducts(){
         populateCategorySelects();
 
-        // Note: admin-only offers UI is available from the admin panel (admin.html)
+        // Note: admin-only offers UI is available from the unified admin panel (/admin/index.html)
         // and not injected into the public 'ofertas.html' page.
 
         // 1) If Firestore configured, subscribe to real-time updates
@@ -2057,10 +2057,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 try{ connectPromoSlidesToProducts(); }catch(e){}
     })();
 
-    // Admin: abrir gestores desde el panel (botones en admin.html/index.html)
+    // Admin: abrir gestores desde el panel (botones en /admin/index.html)
     try{
         const path = window.location.pathname.split('/').pop();
-        if (path === 'admin.html' || window.location.pathname.indexOf('/admin') !== -1){
+        if (path === 'index.html' && window.location.pathname.indexOf('/admin/') !== -1){
             const offersBtn = document.getElementById('admin-offers-btn');
             const invBtn = document.getElementById('admin-invoices-btn');
             const productsBtn = document.getElementById('admin-products-btn');
