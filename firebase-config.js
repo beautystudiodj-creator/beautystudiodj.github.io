@@ -3,13 +3,13 @@
 
 (function () {
     var cfg = {
-        apiKey: "AIzaSyBHipLnuxtYDGT8PIS3ijIobo4iE-zlJDY",
-        authDomain: "beautystudio-dj.firebaseapp.com",
-        projectId: "beautystudio-dj",
-        storageBucket: "beautystudio-dj.firebasestorage.app",
-        messagingSenderId: "1027229175042",
-        appId: "1:1027229175042:web:d2cd873601e1a2b11ac61b"
-    };
+  apiKey: "AIzaSyBHipLnuxtYDGT8PIS3ijIobo4iE-zlJDY",
+  authDomain: "beautystudio-dj.firebaseapp.com",
+  projectId: "beautystudio-dj",
+  storageBucket: "beautystudio-dj.firebasestorage.app",
+  messagingSenderId: "1027229175042",
+  appId: "1:1027229175042:web:d2cd873601e1a2b11ac61b"
+};
 
     window.__FIREBASE_CONFIG__ = cfg;
     window.__FIRESTORE_DB__ = null;
